@@ -142,7 +142,7 @@ def word2vec(train, args, display_step=1000, device='/cpu:0'):
 
 			start_time = time.time()
 
-			all_text = 1000#train.text_size/(batch_size/num_skips)
+			all_text = train.text_size/(batch_size/num_skips)
 
 			b_time = 0.
 			o_time = 0.
