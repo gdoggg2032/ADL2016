@@ -50,15 +50,15 @@ def arg_parse():
 
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--cooccur', default='./text8.cooccur', type=str)
-	parser.add_argument('--vocab', default='./text8.vocab', type=str)
+	parser.add_argument('--cooccur', default='./text8_glove.cooccur', type=str)
+	parser.add_argument('--vocab', default='./text8_glove.vocab', type=str)
 	parser.add_argument('--x_max', default=100.0, type=float)
 	parser.add_argument('--x_alpha', default=0.75, type=float)
 	parser.add_argument('--lr', default=0.05, type=float)
 	parser.add_argument('--epochs', default=10, type=int)
 	parser.add_argument('--batch', default=100, type=int)
 	parser.add_argument('--dim', default=100, type=int)
-	parser.add_argument('--model', default="./model", type=str)
+	parser.add_argument('--model', default="./model_glove", type=str)
 	# parser.add_argument('--vector', default='./g_vector.txt', type=str)
 	args = parser.parse_args()
 
@@ -76,14 +76,14 @@ def dump_vector(vec_file, vocab_dict, w, c_w):
 			f.write(out)
 
 
-def glove(train, args, display_step=1000):
+def glove(train, args, display_step=1000, device='/cpu:0'):
 
 	learning_rate = args.lr
 	training_epochs = args.epochs
 	batch_size = args.batch
 	embedding_size = args.dim
 
-	with tf.device('/cpu:0'):
+	with tf.device(device):
 		x = tf.placeholder(tf.int32, [None, 2])
 		cooccurs = tf.placeholder(tf.float32, [None])
 
@@ -149,8 +149,8 @@ def glove(train, args, display_step=1000):
 
 			avg_cost /= train.n_samples
 
-			if epoch % display_step == 0:
-				print >> sys.stderr, "Epoch:", epoch+1, "cost=", avg_cost, "time: ", time.time() - start_time, ""+' '
+			# if epoch % display_step == 0:
+			print >> sys.stderr, "Epoch:", epoch+1, "cost=", avg_cost, "time: ", time.time() - start_time
 
 		save_path = saver.save(sess, args.model)
  		print >> sys.stderr, "Model saved in file: ", save_path
@@ -162,10 +162,13 @@ def main():
 
 	args = arg_parse()
 
+	print >> sys.stderr, "load data"
 	train = Data(args)
 
+	print >> sys.stderr, "training"
 	embeddings, c_embeddings = glove(train, args)
 
+	print >> sys.stderr, "dumping vectors"
 	dump_vector("./text8_vector"+"[glove][dim="+str(args.dim)+"]"+"[iter="+str(args.epochs)+"][lr="+str(args.lr)+"]", train.vocab_dict, embeddings, c_embeddings)
 
 
