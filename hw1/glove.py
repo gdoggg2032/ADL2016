@@ -50,8 +50,8 @@ def arg_parse():
 
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--cooccur', default='./text8_glove.cooccur', type=str)
-	parser.add_argument('--vocab', default='./text8_glove.vocab', type=str)
+	parser.add_argument('--cooccur', default='./glove.cooccur', type=str)
+	parser.add_argument('--vocab', default='./glove.vocab', type=str)
 	parser.add_argument('--x_max', default=100.0, type=float)
 	parser.add_argument('--x_alpha', default=0.75, type=float)
 	parser.add_argument('--lr', default=0.05, type=float)
@@ -59,7 +59,10 @@ def arg_parse():
 	parser.add_argument('--batch', default=100, type=int)
 	parser.add_argument('--dim', default=100, type=int)
 	parser.add_argument('--model', default="./model_glove", type=str)
-	# parser.add_argument('--vector', default='./g_vector.txt', type=str)
+	parser.add_argument('--name', default="./text8", type=str)
+	parser.add_argument('--conti', default=0, type=int)
+	parser.add_argument('--conti_model', default="./model_glove", type=str)
+	parser.add_argument('--vector', default='./g_vector.txt', type=str)
 	args = parser.parse_args()
 
 	return args
@@ -122,7 +125,11 @@ def glove(train, args, display_step=1000, device='/cpu:0'):
 
 		sess.run(init)
 
+		if args.conti == 1:
+			saver.restore(sess, args.conti_model)
+
 		for epoch in range(training_epochs):
+
 
 			start_time = time.time()
 
@@ -169,8 +176,8 @@ def main():
 	embeddings, c_embeddings = glove(train, args)
 
 	print >> sys.stderr, "dumping vectors"
-	dump_vector("./text8_vector"+"[glove][dim="+str(args.dim)+"]"+"[iter="+str(args.epochs)+"][lr="+str(args.lr)+"]", train.vocab_dict, embeddings, c_embeddings)
-
+	# dump_vector(args.name+"_vector"+"[glove][dim="+str(args.dim)+"]"+"[iter="+str(args.epochs)+"][lr="+str(args.lr)+"]", train.vocab_dict, embeddings, c_embeddings)
+	dump_vector(args.vector, train.vocab_dict, embeddings, c_embeddings)
 
 if __name__ == "__main__":
 	main()

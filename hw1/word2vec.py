@@ -21,38 +21,58 @@ class Data(object):
 		self.text_size = len(self.text)
 		self.vocabulary_size = len(self.vocab_dict)
 
+		self.data = np.load(args.batch)
+		self.n_samples = self.data.shape[0]
+
 		self.index = 0
 
-	def next_batch(self, batch_size, num_skips, skip_window):
+	def next_batch(self, batch_size):
 
-		assert batch_size % num_skips == 0
-		assert num_skips <= 2 * skip_window
+		if self.index + batch_size > self.n_samples:
 
-		batch_w = np.zeros((batch_size, 1), dtype=np.int32)
-		batch_c = np.zeros((batch_size, 1), dtype=np.int32)
-		span = 2 * skip_window + 1 
-		buf = collections.deque(maxlen=span)
-		for _ in range(span):
-			buf.append(self.text[self.index])
-			self.index = (self.index + 1) % self.text_size
+			batch = self.data[self.index :]
 
-		for i in range(batch_size // num_skips):
-			# each word has num_skips c_words
-			# total words in batch: batch_size // num_skips
-			target = skip_window
-			targets_avoid = [target]
+			self.index = 0
+			
+		else:
 
-			for j in range(num_skips):
-				while target in targets_avoid:
-					target = random.randint(0, span - 1)
-				targets_avoid.append(target)
-				batch_w[i*num_skips+j, 0] = buf[skip_window]
-				batch_c[i*num_skips+j, 0] = buf[target]
+			batch = self.data[self.index : self.index + batch_size]
+			self.index += batch_size
 
-			buf.append(self.text[self.index])
-			self.index = (self.index + 1) % self.text_size
+		return batch[:, 0:1], batch[:, 1:2]
 
-		return batch_w, batch_c
+
+
+	# def next_batch(self, batch_size, num_skips, skip_window):
+
+	# 	assert batch_size % num_skips == 0
+	# 	assert num_skips <= 2 * skip_window
+
+	# 	batch_w = np.zeros((batch_size, 1), dtype=np.int32)
+	# 	batch_c = np.zeros((batch_size, 1), dtype=np.int32)
+	# 	span = 2 * skip_window + 1 
+	# 	buf = collections.deque(maxlen=span)
+	# 	for _ in range(span):
+	# 		buf.append(self.text[self.index])
+	# 		self.index = (self.index + 1) % self.text_size
+
+	# 	for i in range(batch_size // num_skips):
+	# 		# each word has num_skips c_words
+	# 		# total words in batch: batch_size // num_skips
+	# 		target = skip_window
+	# 		targets_avoid = [target]
+
+	# 		for j in range(num_skips):
+	# 			while target in targets_avoid:
+	# 				target = random.randint(0, span - 1)
+	# 			targets_avoid.append(target)
+	# 			batch_w[i*num_skips+j, 0] = buf[skip_window]
+	# 			batch_c[i*num_skips+j, 0] = buf[target]
+
+	# 		buf.append(self.text[self.index])
+	# 		self.index = (self.index + 1) % self.text_size
+
+	# 	return batch_w, batch_c
 
 
 
@@ -68,18 +88,21 @@ def arg_parse():
 
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--text', default='./text8_w2v.text', type=str)
-	parser.add_argument('--vocab', default='./text8_w2v.vocab', type=str)
-
+	parser.add_argument('--text', default='./w2v.text', type=str)
+	parser.add_argument('--vocab', default='./w2v.vocab', type=str)
+	parser.add_argument('--batch', default='./w2v.batch', type=str)
+	# parser.add_argument('--t', default=5e-17, type=float)
 	parser.add_argument('--lr', default=0.05, type=float)
-	parser.add_argument('--epochs', default=10, type=int)
-	parser.add_argument('--batch', default=256, type=int)
-	parser.add_argument('--num_skips', default=8, type=int)
-	parser.add_argument('--neg_sampling', default=64, type=int)
-	parser.add_argument('--window', default=5, type=int)
+	parser.add_argument('--epochs', default=5, type=int)
+	parser.add_argument('--batch_size', default=50, type=int)
+	# parser.add_argument('--num_skips', default=8, type=int)
+	parser.add_argument('--neg_sampling', default=100, type=int)
+	# parser.add_argument('--window', default=5, type=int)
 	parser.add_argument('--dim', default=100, type=int)
 	parser.add_argument('--model', default="./model_w2v", type=str)
-	# parser.add_argument('--vector', default='./g_vector.txt', type=str)
+	parser.add_argument('--conti', default=0, type=int)
+	parser.add_argument('--conti_model', default="./model_w2v", type=str)
+	parser.add_argument('--vector', default='./w2v_vector.txt', type=str)
 	args = parser.parse_args()
 
 	return args
@@ -98,10 +121,9 @@ def dump_vector(vec_file, vocab_dict, w):
 
 def word2vec(train, args, display_step=1000, device='/cpu:0'):
 
-	batch_size = args.batch
+	batch_size = args.batch_size
 	embedding_size = args.dim
-	skip_window = args.window
-	num_skips = args.num_skips
+
 	num_sampled = args.neg_sampling
 	learning_rate = args.lr
 	training_epochs = args.epochs
@@ -124,11 +146,12 @@ def word2vec(train, args, display_step=1000, device='/cpu:0'):
 		tf.nn.nce_loss(nce_weights, nce_biases, embed, c_w,
 			num_sampled, train.vocabulary_size))
 
-	optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(cost)
+	optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
 
 	init = tf.initialize_all_variables()
 
 	saver = tf.train.Saver()
+
 
 	print >> sys.stderr, "start session"
 
@@ -138,25 +161,31 @@ def word2vec(train, args, display_step=1000, device='/cpu:0'):
 
 		sess.run(init)
 
+		if args.conti == 1:
+			saver.restore(sess, args.conti_model)
+		
+			
+
 		for epoch in range(training_epochs):
+
+
+
 
 			start_time = time.time()
 
-			all_text = train.text_size/(batch_size/num_skips)
+			total_batch = int((train.n_samples+batch_size) / float(batch_size))
 
 			b_time = 0.
 			o_time = 0.
 
 			avg_cost = 0.
 
-			for i in range(all_text):
-
+			for i in range(total_batch):
 				if (i+1) % display_step == 0:
-					print >> sys.stderr, i, "/", all_text, b_time, o_time
-
+					print >> sys.stderr, i, "/", total_batch, b_time, o_time
 
 				b_start = time.time()
-				batch_w, batch_c = train.next_batch(batch_size, num_skips, skip_window)
+				batch_w, batch_c = train.next_batch(batch_size)
 				b_time += time.time() - b_start
 
 				o_start = time.time()
@@ -165,7 +194,7 @@ def word2vec(train, args, display_step=1000, device='/cpu:0'):
 			
 				avg_cost += c
 
-			avg_cost /= all_text
+			avg_cost /= total_batch
 
 			print >> sys.stderr, "Epoch:", epoch+1, "cost=", avg_cost, "time: ", time.time() - start_time
 
@@ -186,7 +215,8 @@ def main():
 	embeddings = word2vec(train, args)
 
 	print >> sys.stderr, "dumping vectors"
-	dump_vector("./text8_vector"+"[w2v][dim="+str(args.dim)+"]"+"[iter="+str(args.epochs)+"][lr="+str(args.lr)+"]", train.vocab_dict, embeddings)
+	# dump_vector("./text8_vector"+"[w2v][dim="+str(args.dim)+"]"+"[iter="+str(args.epochs)+"][lr="+str(args.lr)+"]", train.vocab_dict, embeddings)
+	dump_vector(args.vector, train.vocab_dict, embeddings)
 
 
 if __name__ == "__main__":

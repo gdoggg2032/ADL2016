@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import cPickle as pickle
 import csv
+import argparse
 # def count_cooccurence(text, vocab_dict, window_size):
 # 	coocur_dict = {}
 
@@ -24,6 +25,12 @@ def count_cooccurence(text, vocab_dict, window_size):
 	for i in xrange(len(text)):
 		print "\r", i+1, "/", len(text),
 		
+
+
+
+
+
+
 		wc = vocab_dict[text[i]]
 		for j in range(i-1, max(i - window_size, 0)-1, -1):
 			w = vocab_dict[text[j]]
@@ -61,18 +68,40 @@ def text_filter(text, freq, low_freq):
 			T.append(w)
 	return T
 
+def arg_parse():
+
+	parser = argparse.ArgumentParser()
+
+	parser.add_argument('--corpus', default='./corpus/text8', type=str)
+	parser.add_argument('--cooccur', default='./glove.cooccur', type=str)
+	parser.add_argument('--vocab', default='./glove.vocab', type=str)
+	
+	parser.add_argument('--low', default=5, type=int)
+	
+
+	
+	parser.add_argument('--window', default=10, type=int)
+	
+	
+	# parser.add_argument('--vector', default='./g_vector.txt', type=str)
+	args = parser.parse_args()
+
+	return args
+
 
 
 if __name__ == "__main__":
 
-	text_file = sys.argv[1]
+	args = arg_parse()
 
-	window_size = int(sys.argv[2])
+	text_file = args.corpus
 
-	low_freq = int(sys.argv[3])
+	window_size = args.window
 
-	vocab_file = sys.argv[4]
-	cooccur_file = sys.argv[5]
+	low_freq = args.low
+
+	vocab_file = args.vocab
+	cooccur_file = args.cooccur
 
 
 	with open(text_file, "r") as f:
@@ -98,7 +127,7 @@ if __name__ == "__main__":
 
 	del coocur_dict
 
-	C = np.genfromtxt(cooccur_file+".tmp", delimiter=',')
+	C = np.genfromtxt(cooccur_file+".tmp", delimiter=',', dtype="float32")
 
 	print "dumping"
 
