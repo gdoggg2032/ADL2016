@@ -1,5 +1,0 @@
-{
-	    "structure": {
-			        "readme": "report.pdf"
-						    }
-}
