@@ -1,0 +1,2 @@
+model_checkpoint_path: "model.ckpt-8700.best_val_acc_100.00"
+all_model_checkpoint_paths: "model.ckpt-8700.best_val_acc_100.00"

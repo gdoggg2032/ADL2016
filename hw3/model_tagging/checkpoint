@@ -1,0 +1,2 @@
+model_checkpoint_path: "model.ckpt-9600.best_val_f1_99.74"
+all_model_checkpoint_paths: "model.ckpt-9600.best_val_f1_99.74"
