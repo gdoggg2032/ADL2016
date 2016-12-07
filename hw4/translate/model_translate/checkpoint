@@ -1,0 +1,5 @@
+model_checkpoint_path: "model_translate"
+all_model_checkpoint_paths: "translate.ckpt-11250.perplex6.02"
+all_model_checkpoint_paths: "translate.ckpt-20250.perplex_4.17"
+all_model_checkpoint_paths: "translate.ckpt-20550.perplex_4.31"
+all_model_checkpoint_paths: "model_translate"

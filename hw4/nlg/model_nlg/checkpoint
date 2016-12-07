@@ -1,0 +1,3 @@
+model_checkpoint_path: "model_nlg"
+all_model_checkpoint_paths: "nlg.ckpt-9600.perplex_1.28"
+all_model_checkpoint_paths: "model_nlg"
