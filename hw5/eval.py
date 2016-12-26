@@ -24,7 +24,7 @@ def main():
         print(it, seed, seed1, score)
         scores.append(int(score))
 
-    print('average', np.mean(scores), 'std', np.std(scores), 'time', time.time() - s)
+    print('average', np.mean(scores), 'std', np.std(scores), 'min', np.min(scores), 'max', np.max(scores), 'time', time.time() - s)
 
 
 if __name__ == '__main__':
