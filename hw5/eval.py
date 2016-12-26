@@ -16,7 +16,7 @@ def main():
     for it in range(r):
         seed = random.randint(0, 10000)
         seed1 = random.randint(0, 10000)
-        proc = subprocess.Popen(['python','grade.py', str(seed), str(seed1)], stdout=subprocess.PIPE, stderr=FNULL)
+        proc = subprocess.Popen(['python','grading.py', str(seed), str(seed1)], stdout=subprocess.PIPE, stderr=FNULL)
         stdout = proc.communicate()[0]
 
         seed, seed1, score = stdout.splitlines()[-1].split(',')
